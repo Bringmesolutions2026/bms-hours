@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMS Dashboard</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f1923; color: #e8e8e8;
+            min-height: 100vh; padding: 16px; padding-bottom: 100px;
+        }
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 16px 0 24px;
+        }
+        .header h1 { font-size: 20px; font-weight: 700; color: #fff; }
+        .header .refresh-btn {
+            background: #1c2938; border: 1px solid #2e3d4f; color: #1da1f2;
+            padding: 8px 16px; border-radius: 8px; font-size: 13px;
+            font-weight: 600; cursor: pointer;
+        }
+        .header .refresh-btn:active { background: #253341; }
+
+        /* Stats row */
+        .stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .stat-card {
+            background: #1c2938; border: 1px solid #2e3d4f; border-radius: 10px;
+            padding: 14px; text-align: center;
+        }
+        .stat-value { font-size: 28px; font-weight: 700; color: #fff; }
+        .stat-label { font-size: 11px; color: #8899a6; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+        .stat-card.green .stat-value { color: #17bf63; }
+        .stat-card.red .stat-value { color: #e0245e; }
+        .stat-card.blue .stat-value { color: #1da1f2; }
+
+        /* Section */
+        .section { margin-bottom: 24px; }
+        .section-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 12px;
+        }
+        .section-title {
+            font-size: 14px; font-weight: 700; color: #8899a6;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .section-badge {
+            font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+            text-transform: uppercase;
+        }
+        .badge-live { background: #17bf63; color: #000; }
+        .badge-alert { background: #e0245e; color: #fff; }
+
+        /* Employee rows */
+        .emp-card {
+            background: #1c2938; border: 1px solid #2e3d4f; border-radius: 10px;
+            padding: 14px; margin-bottom: 8px;
+        }
+        .emp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .emp-name { font-size: 16px; font-weight: 700; color: #fff; }
+        .emp-status {
+            font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 6px;
+            text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .status-in { background: #17bf63; color: #000; }
+        .status-out { background: #2e3d4f; color: #8899a6; }
+        .status-missing { background: #e0245e; color: #fff; }
+
+        .emp-details { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .emp-detail { font-size: 12px; }
+        .emp-detail .label { color: #8899a6; }
+        .emp-detail .value { color: #fff; font-weight: 600; }
+
+        /* Shift table */
+        .shift-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .shift-table th {
+            text-align: left; padding: 10px 8px; color: #8899a6; font-weight: 600;
+            border-bottom: 1px solid #2e3d4f; font-size: 11px;
+            text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .shift-table td {
+            padding: 10px 8px; border-bottom: 1px solid #1c2938; color: #e8e8e8;
+        }
+        .shift-table tr:nth-child(even) td { background: #1c2938; }
+
+        /* Alert card */
+        .alert-card {
+            background: #1c2938; border-left: 3px solid #e0245e;
+            border-radius: 0 10px 10px 0; padding: 12px 14px; margin-bottom: 8px;
+        }
+        .alert-card.medium { border-left-color: #ffad1f; }
+        .alert-card.low { border-left-color: #1da1f2; }
+        .alert-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .alert-type { font-size: 12px; font-weight: 700; color: #e0245e; text-transform: uppercase; }
+        .alert-card.medium .alert-type { color: #ffad1f; }
+        .alert-time { font-size: 11px; color: #8899a6; }
+        .alert-detail { font-size: 13px; color: #e8e8e8; }
+        .alert-emp { font-size: 12px; color: #8899a6; margin-top: 2px; }
+
+        /* Reliability table */
+        .score-bar { display: flex; align-items: center; gap: 8px; }
+        .score-fill {
+            height: 6px; border-radius: 3px; background: #17bf63; min-width: 4px;
+        }
+        .score-fill.gold { background: #ffad1f; }
+        .score-fill.low { background: #e0245e; }
+        .score-num { font-size: 14px; font-weight: 700; min-width: 36px; }
+
+        .tier-badge {
+            font-size: 10px; font-weight: 700; padding: 2px 6px;
+            border-radius: 4px; text-transform: uppercase;
+        }
+        .tier-elite { background: #7c3aed; color: #fff; }
+        .tier-gold { background: #ffad1f; color: #000; }
+        .tier-silver { background: #8899a6; color: #000; }
+        .tier-none { background: #2e3d4f; color: #8899a6; }
+
+        .loading { text-align: center; color: #8899a6; padding: 40px; font-size: 14px; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 4px; margin-bottom: 20px; overflow-x: auto; }
+        .tab {
+            padding: 10px 16px; font-size: 13px; font-weight: 600;
+            background: #1c2938; border: 1px solid #2e3d4f; border-radius: 8px;
+            color: #8899a6; cursor: pointer; white-space: nowrap;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .tab:active { background: #253341; }
+        .tab.active { background: #1da1f2; color: #fff; border-color: #1da1f2; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>BMS Dashboard</h1>
+    <button class="refresh-btn" onclick="loadDashboard()">↻ Refresh</button>
+</div>
+
+<div class="stats-row">
+    <div class="stat-card green">
+        <div class="stat-value" id="statClockedIn">-</div>
+        <div class="stat-label">Clocked In</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value" id="statTotalHours">-</div>
+        <div class="stat-label">Hours Today</div>
+    </div>
+    <div class="stat-card red">
+        <div class="stat-value" id="statAlerts">-</div>
+        <div class="stat-label">Alerts</div>
+    </div>
+</div>
+
+<div class="tabs">
+    <div class="tab active" data-tab="tabLive">Live</div>
+    <div class="tab" data-tab="tabShifts">Today's Shifts</div>
+    <div class="tab" data-tab="tabScores">Reliability</div>
+    <div class="tab" data-tab="tabAlerts">Alerts</div>
+</div>
+
+<!-- TAB: LIVE -->
+<div class="tab-content active" id="tabLive">
+    <div class="section">
+        <div class="section-header">
+            <span class="section-title">Employee Status</span>
+            <span class="section-badge badge-live">Live</span>
+        </div>
+        <div id="liveEmployees"><div class="loading">Loading...</div></div>
+    </div>
+</div>
+
+<!-- TAB: TODAY'S SHIFTS -->
+<div class="tab-content" id="tabShifts">
+    <div class="section">
+        <div class="section-header">
+            <span class="section-title">Daily Report</span>
+        </div>
+        <div style="overflow-x: auto;">
+            <table class="shift-table">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Start</th>
+                        <th>Finish</th>
+                        <th>Paid Hrs</th>
+                        <th>Finish Location</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="shiftTableBody">
+                    <tr><td colspan="6" class="loading">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- TAB: RELIABILITY -->
+<div class="tab-content" id="tabScores">
+    <div class="section">
+        <div class="section-header">
+            <span class="section-title">Reliability Rankings</span>
+        </div>
+        <div id="reliabilityList"><div class="loading">Loading...</div></div>
+    </div>
+</div>
+
+<!-- TAB: ALERTS -->
+<div class="tab-content" id="tabAlerts">
+    <div class="section">
+        <div class="section-header">
+            <span class="section-title">Recent Alerts</span>
+        </div>
+        <div id="alertsList"><div class="loading">Loading...</div></div>
+    </div>
+</div>
+
+<script>
+// CONFIG — same Apps Script URL
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyATmpwRd9TAgu_ypD81dVodb4tYPJJwAElvlCJrEvkZGn2weA7k1mbw84lVNvZDZ9i/exec';
+
+// Tab switching
+document.querySelectorAll('.tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+        document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+        tab.classList.add('active');
+        document.getElementById(tab.getAttribute('data-tab')).classList.add('active');
+    });
+});
+
+function loadDashboard() {
+    fetch(SCRIPT_URL + '?action=dashboard')
+        .then(function(r) { return r.json(); })
+        .then(function(data) { renderDashboard(data); })
+        .catch(function(err) {
+            console.error('Dashboard load error:', err);
+            document.getElementById('liveEmployees').innerHTML =
+                '<div class="loading">Error loading data. Check connection.</div>';
+        });
+}
+
+function renderDashboard(data) {
+    // Stats
+    var clockedIn = data.employees.filter(function(e) { return e.status === 'CLOCKED_IN'; }).length;
+    var totalHours = data.todayShifts.reduce(function(sum, s) { return sum + (Number(s.paidHours) || 0); }, 0);
+    var unresolvedAlerts = data.alerts.filter(function(a) { return a.resolved === 'NO'; }).length;
+
+    document.getElementById('statClockedIn').textContent = clockedIn;
+    document.getElementById('statTotalHours').textContent = totalHours.toFixed(1);
+    document.getElementById('statAlerts').textContent = unresolvedAlerts;
+
+    // Live employees
+    var liveHtml = '';
+    // Sort: clocked in first, then by name
+    var sorted = data.employees.slice().sort(function(a, b) {
+        if (a.status === 'CLOCKED_IN' && b.status !== 'CLOCKED_IN') return -1;
+        if (b.status === 'CLOCKED_IN' && a.status !== 'CLOCKED_IN') return 1;
+        return (a.name || '').localeCompare(b.name || '');
+    });
+
+    sorted.forEach(function(emp) {
+        var statusClass = emp.status === 'CLOCKED_IN' ? 'status-in' :
+                          emp.status === 'MISSING' ? 'status-missing' : 'status-out';
+        var statusText = emp.status === 'CLOCKED_IN' ? 'Clocked In' :
+                         emp.status === 'MISSING' ? 'Missing' : 'Clocked Out';
+
+        liveHtml += '<div class="emp-card">' +
+            '<div class="emp-header">' +
+                '<span class="emp-name">' + esc(emp.name) + '</span>' +
+                '<span class="emp-status ' + statusClass + '">' + statusText + '</span>' +
+            '</div>' +
+            '<div class="emp-details">' +
+                '<div class="emp-detail"><span class="label">Last In: </span><span class="value">' + esc(emp.lastClockIn || '-') + '</span></div>' +
+                '<div class="emp-detail"><span class="label">Last Out: </span><span class="value">' + esc(emp.lastClockOut || '-') + '</span></div>' +
+                '<div class="emp-detail"><span class="label">Score: </span><span class="value">' + (emp.score || 100) + '</span></div>' +
+                '<div class="emp-detail"><span class="label">Tier: </span><span class="value">' + esc(emp.bonusTier || '-') + '</span></div>' +
+            '</div>' +
+        '</div>';
+    });
+    document.getElementById('liveEmployees').innerHTML = liveHtml || '<div class="loading">No employees found</div>';
+
+    // Shifts table
+    var shiftHtml = '';
+    data.todayShifts.forEach(function(s) {
+        var statusClass = s.status === 'CLOCKED_IN' ? 'status-in' :
+                          s.status === 'MISSING_CLOCK_OUT' ? 'status-missing' : 'status-out';
+        shiftHtml += '<tr>' +
+            '<td><strong>' + esc(s.employee) + '</strong></td>' +
+            '<td>' + esc(s.clockIn || '-') + '</td>' +
+            '<td>' + esc(s.clockOut || '-') + '</td>' +
+            '<td>' + (s.paidHours ? Number(s.paidHours).toFixed(1) : '-') + '</td>' +
+            '<td>' + esc(s.finishStatus || '-') + '</td>' +
+            '<td><span class="emp-status ' + statusClass + '">' + esc(s.status || '-') + '</span></td>' +
+        '</tr>';
+    });
+    document.getElementById('shiftTableBody').innerHTML = shiftHtml || '<tr><td colspan="6" class="loading">No shifts today</td></tr>';
+
+    // Reliability rankings
+    var reliHtml = '';
+    var sortedByScore = data.employees.slice().sort(function(a, b) { return (b.score || 100) - (a.score || 100); });
+    sortedByScore.forEach(function(emp, idx) {
+        var score = emp.score || 100;
+        var pct = Math.min(100, Math.max(0, score));
+        var barClass = score >= 110 ? '' : score >= 100 ? 'gold' : 'low';
+        var tierClass = (emp.bonusTier || '').toLowerCase();
+        if (tierClass === 'none' || !tierClass) tierClass = 'none';
+
+        reliHtml += '<div class="emp-card">' +
+            '<div class="emp-header">' +
+                '<span class="emp-name">#' + (idx + 1) + ' ' + esc(emp.name) + '</span>' +
+                '<span class="tier-badge tier-' + tierClass + '">' + esc(emp.bonusTier || 'None') +
+                    (emp.bonusAmount ? ' $' + emp.bonusAmount : '') + '</span>' +
+            '</div>' +
+            '<div class="score-bar">' +
+                '<div class="score-fill ' + barClass + '" style="width: ' + pct + '%;"></div>' +
+                '<span class="score-num">' + score + '</span>' +
+            '</div>' +
+        '</div>';
+    });
+    document.getElementById('reliabilityList').innerHTML = reliHtml || '<div class="loading">No data</div>';
+
+    // Alerts
+    var alertHtml = '';
+    data.alerts.forEach(function(a) {
+        var sevClass = (a.severity || '').toLowerCase();
+        if (sevClass === 'high') sevClass = '';
+        alertHtml += '<div class="alert-card ' + sevClass + '">' +
+            '<div class="alert-top">' +
+                '<span class="alert-type">' + esc(a.type || '') + '</span>' +
+                '<span class="alert-time">' + esc(a.timestamp || '') + '</span>' +
+            '</div>' +
+            '<div class="alert-detail">' + esc(a.details || '') + '</div>' +
+            '<div class="alert-emp">' + esc(a.employee || '') + '</div>' +
+        '</div>';
+    });
+    document.getElementById('alertsList').innerHTML = alertHtml || '<div class="loading">No alerts</div>';
+}
+
+function esc(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+}
+
+// Load on page open
+loadDashboard();
+// Auto-refresh every 60 seconds
+setInterval(loadDashboard, 60000);
+</script>
+</body>
+</html>

@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>BMS Hours</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f1923;
+            color: #e8e8e8;
+            min-height: 100vh;
+            padding: 16px;
+            padding-bottom: 100px;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0 24px;
+        }
+        .header h1 { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: 0.5px; }
+        .header p { font-size: 13px; color: #8899a6; margin-top: 4px; }
+
+        /* Screens */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* Common */
+        .form-group { margin-bottom: 16px; }
+        label {
+            display: block; font-size: 13px; font-weight: 600;
+            color: #8899a6; margin-bottom: 6px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        select, input[type="text"] {
+            width: 100%; padding: 14px 12px; font-size: 16px;
+            background: #1c2938; border: 1px solid #2e3d4f;
+            border-radius: 10px; color: #fff;
+            appearance: none; -webkit-appearance: none;
+        }
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238899a6' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 36px;
+        }
+        input:focus, select:focus {
+            outline: none; border-color: #1da1f2;
+            box-shadow: 0 0 0 3px rgba(29, 161, 242, 0.15);
+        }
+        textarea {
+            width: 100%; padding: 14px 12px; font-size: 16px;
+            background: #1c2938; border: 1px solid #2e3d4f;
+            border-radius: 10px; color: #fff;
+            resize: vertical; min-height: 80px; font-family: inherit;
+        }
+        textarea:focus {
+            outline: none; border-color: #1da1f2;
+            box-shadow: 0 0 0 3px rgba(29, 161, 242, 0.15);
+        }
+
+        .btn-primary {
+            width: 100%; padding: 16px; font-size: 17px; font-weight: 700;
+            background: #1da1f2; color: #fff; border: none;
+            border-radius: 12px; cursor: pointer; letter-spacing: 0.3px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-primary:active { background: #1a91da; }
+        .btn-primary:disabled { background: #2e3d4f; color: #8899a6; cursor: not-allowed; }
+
+        .btn-clock-in {
+            background: #17bf63;
+        }
+        .btn-clock-in:active { background: #14a857; }
+
+        .btn-clock-out {
+            background: #e0245e;
+        }
+        .btn-clock-out:active { background: #c91f53; }
+
+        .status-msg {
+            text-align: center; margin-top: 12px; font-size: 14px; min-height: 20px;
+        }
+        .status-msg.success { color: #17bf63; }
+        .status-msg.error { color: #e0245e; }
+        .status-msg.sending { color: #1da1f2; }
+
+        .section-divider { border: none; border-top: 1px solid #2e3d4f; margin: 24px 0; }
+
+        /* Photo section */
+        .photo-section {
+            background: #1c2938; border: 1px solid #2e3d4f;
+            border-radius: 12px; padding: 16px; margin-bottom: 16px;
+        }
+        .photo-section.captured { border-color: #17bf63; }
+        .photo-capture-btn {
+            width: 100%; padding: 14px; font-size: 15px; font-weight: 600;
+            background: #253341; color: #1da1f2;
+            border: 2px dashed #2e3d4f; border-radius: 10px;
+            cursor: pointer; display: flex; align-items: center;
+            justify-content: center; gap: 8px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .photo-capture-btn:active { background: #2e3d4f; }
+        .photo-preview-container { display: none; margin-top: 12px; }
+        .photo-preview-container.visible { display: block; }
+        .photo-preview { width: 100%; border-radius: 8px; border: 1px solid #2e3d4f; }
+        .photo-meta { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+        .photo-timestamp { font-size: 12px; color: #17bf63; font-weight: 600; }
+        .photo-retake {
+            font-size: 13px; color: #1da1f2; background: none;
+            border: none; cursor: pointer; font-weight: 600; padding: 4px 0;
+        }
+
+        /* GPS indicator */
+        .gps-status {
+            display: flex; align-items: center; gap: 8px;
+            padding: 12px 16px; background: #1c2938;
+            border: 1px solid #2e3d4f; border-radius: 10px;
+            margin-bottom: 16px; font-size: 14px;
+        }
+        .gps-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: #8899a6; flex-shrink: 0;
+        }
+        .gps-dot.acquired { background: #17bf63; }
+        .gps-dot.failed { background: #e0245e; }
+        .gps-dot.waiting { background: #ffad1f; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* Finish Run options */
+        .finish-options { margin-bottom: 16px; }
+        .finish-option {
+            display: block; width: 100%; padding: 16px;
+            background: #1c2938; border: 2px solid #2e3d4f;
+            border-radius: 12px; color: #fff; font-size: 15px;
+            font-weight: 600; text-align: left; cursor: pointer;
+            margin-bottom: 10px; -webkit-tap-highlight-color: transparent;
+        }
+        .finish-option:active { background: #253341; }
+        .finish-option.selected { border-color: #1da1f2; background: #1a2c3d; }
+        .finish-option .option-label { display: block; margin-bottom: 4px; }
+        .finish-option .option-desc { font-size: 12px; color: #8899a6; font-weight: 400; }
+
+        /* Shift summary card */
+        .shift-card {
+            background: #1c2938; border: 1px solid #2e3d4f;
+            border-radius: 12px; padding: 16px; margin-bottom: 16px;
+        }
+        .shift-card h3 { font-size: 14px; color: #8899a6; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .shift-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #2e3d4f; }
+        .shift-row:last-child { border-bottom: none; }
+        .shift-row .label { color: #8899a6; font-size: 14px; }
+        .shift-row .value { color: #fff; font-size: 14px; font-weight: 600; }
+        .shift-row .value.highlight { color: #17bf63; }
+
+        /* Clocked-in banner */
+        .clocked-in-banner {
+            background: #17bf63; color: #000; text-align: center;
+            padding: 10px; border-radius: 10px; margin-bottom: 16px;
+            font-weight: 700; font-size: 14px;
+        }
+
+        /* Checklist */
+        .checklist { margin-bottom: 16px; }
+        .checklist-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 0; border-bottom: 1px solid #2e3d4f;
+            font-size: 14px;
+        }
+        .checklist-item:last-child { border-bottom: none; }
+        .check-icon { font-size: 18px; width: 24px; text-align: center; }
+        .check-icon.done { color: #17bf63; }
+        .check-icon.pending { color: #8899a6; }
+
+        .validation-error {
+            background: #2d1520; border: 1px solid #e0245e;
+            border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;
+            font-size: 13px; color: #e0245e; text-align: center;
+            display: none;
+        }
+        .validation-error.visible { display: block; }
+
+        .hidden-input { display: none; }
+
+        /* Current time display */
+        .live-clock {
+            text-align: center; font-size: 48px; font-weight: 700;
+            color: #fff; margin: 20px 0;
+        }
+        .live-date {
+            text-align: center; font-size: 15px; color: #8899a6; margin-bottom: 24px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>BMS Hours</h1>
+    <p>Bring Me Solutions</p>
+</div>
+
+<!-- ============ SCREEN: SELECT NAME ============ -->
+<div class="screen active" id="screenName">
+    <div class="form-group">
+        <label for="driverName">Your Name</label>
+        <select id="driverName" required>
+            <option value="">Select your name</option>
+            <option>Cam P</option>
+            <option>Carlos</option>
+            <option>Chris</option>
+            <option>Dale</option>
+            <option>Felix</option>
+            <option>Francis</option>
+            <option>Jack C</option>
+            <option>Jack G</option>
+            <option>James</option>
+            <option>Jamie</option>
+            <option>John</option>
+            <option>Jonny</option>
+            <option>Liam</option>
+            <option>Lucas</option>
+            <option>Matt</option>
+            <option>Matt M</option>
+            <option>Rory</option>
+            <option>Tom</option>
+            <option>Victor</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="depot">Assigned Depot</label>
+        <select id="depot">
+            <option value="">Select depot</option>
+            <option value="oxley">Oxley</option>
+            <option value="carindale">Carindale</option>
+            <option value="loganholme">Loganholme</option>
+            <option value="macgregor">Macgregor</option>
+        </select>
+    </div>
+    <button class="btn-primary" id="btnContinue" onclick="continueToAction()">Continue</button>
+    <div class="status-msg" id="nameStatus"></div>
+</div>
+
+<!-- ============ SCREEN: CLOCK IN ============ -->
+<div class="screen" id="screenClockIn">
+    <div class="live-clock" id="clockInTime"></div>
+    <div class="live-date" id="clockInDate"></div>
+
+    <div class="photo-section" id="ciPhotoSection">
+        <label>Clock-In Selfie</label>
+        <button type="button" class="photo-capture-btn" id="ciPhotoBtn" onclick="capturePhoto('ci')">
+            📷 Take Clock-In Selfie
+        </button>
+        <input type="file" accept="image/*" capture="user" class="hidden-input" id="ciInput">
+        <div class="photo-preview-container" id="ciPreview">
+            <img class="photo-preview" id="ciImg" alt="Clock-in selfie">
+            <div class="photo-meta">
+                <span class="photo-timestamp" id="ciTimestamp"></span>
+                <button type="button" class="photo-retake" onclick="capturePhoto('ci')">Retake</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="gps-status" id="ciGpsStatus">
+        <div class="gps-dot waiting" id="ciGpsDot"></div>
+        <span id="ciGpsText">Acquiring GPS...</span>
+    </div>
+
+    <div class="form-group">
+        <label for="teamMember">Team Member (Partner)</label>
+        <select id="teamMember">
+            <option value="">Select team member</option>
+            <option>Cam P</option>
+            <option>Carlos</option>
+            <option>Chris</option>
+            <option>Dale</option>
+            <option>Felix</option>
+            <option>Francis</option>
+            <option>Jack C</option>
+            <option>Jack G</option>
+            <option>James</option>
+            <option>Jamie</option>
+            <option>John</option>
+            <option>Jonny</option>
+            <option>Liam</option>
+            <option>Lucas</option>
+            <option>Matt</option>
+            <option>Matt M</option>
+            <option>Rory</option>
+            <option>Tom</option>
+            <option>Victor</option>
+            <option value="solo">Solo run</option>
+        </select>
+    </div>
+
+    <button class="btn-primary btn-clock-in" id="btnClockIn" onclick="submitClockIn()" disabled>
+        Clock In
+    </button>
+    <div class="status-msg" id="ciStatus"></div>
+</div>
+
+<!-- ============ SCREEN: CLOCKED IN (waiting for clock out) ============ -->
+<div class="screen" id="screenClockedIn">
+    <div class="clocked-in-banner" id="clockedInBanner">CLOCKED IN</div>
+
+    <div class="shift-card">
+        <h3>Current Shift</h3>
+        <div class="shift-row">
+            <span class="label">Name</span>
+            <span class="value" id="shiftName"></span>
+        </div>
+        <div class="shift-row">
+            <span class="label">Team Member</span>
+            <span class="value" id="shiftTeam"></span>
+        </div>
+        <div class="shift-row">
+            <span class="label">Depot</span>
+            <span class="value" id="shiftDepot"></span>
+        </div>
+        <div class="shift-row">
+            <span class="label">Clocked In</span>
+            <span class="value highlight" id="shiftStart"></span>
+        </div>
+        <div class="shift-row">
+            <span class="label">Duration</span>
+            <span class="value" id="shiftDuration"></span>
+        </div>
+    </div>
+
+    <button class="btn-primary btn-clock-out" onclick="startClockOut()">
+        Clock Out
+    </button>
+</div>
+
+<!-- ============ SCREEN: CLOCK OUT ============ -->
+<div class="screen" id="screenClockOut">
+    <div class="live-clock" id="clockOutTime"></div>
+    <div class="live-date" id="clockOutDate"></div>
+
+    <div class="photo-section" id="coPhotoSection">
+        <label>Clock-Out Selfie</label>
+        <button type="button" class="photo-capture-btn" id="coPhotoBtn" onclick="capturePhoto('co')">
+            📷 Take Clock-Out Selfie
+        </button>
+        <input type="file" accept="image/*" capture="user" class="hidden-input" id="coInput">
+        <div class="photo-preview-container" id="coPreview">
+            <img class="photo-preview" id="coImg" alt="Clock-out selfie">
+            <div class="photo-meta">
+                <span class="photo-timestamp" id="coTimestamp"></span>
+                <button type="button" class="photo-retake" onclick="capturePhoto('co')">Retake</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="gps-status" id="coGpsStatus">
+        <div class="gps-dot waiting" id="coGpsDot"></div>
+        <span id="coGpsText">Acquiring GPS...</span>
+    </div>
+
+    <div class="form-group">
+        <label for="truckRego">Truck Registration</label>
+        <input type="text" id="truckRego" placeholder="e.g. 123 ABC" style="text-transform: uppercase;" oninput="updateClockOutChecklist()">
+    </div>
+
+    <hr class="section-divider">
+    <label>Finish Run</label>
+    <div class="finish-options">
+        <button class="finish-option" data-value="returned_to_depot" onclick="selectFinish(this)">
+            <span class="option-label">A — Returned To Depot</span>
+            <span class="option-desc">Truck returned to warehouse</span>
+        </button>
+        <button class="finish-option" data-value="final_delivery" onclick="selectFinish(this)">
+            <span class="option-label">B — Finished From Final Delivery Location</span>
+            <span class="option-desc">Shift ended at last drop</span>
+        </button>
+        <button class="finish-option" data-value="alternate_location" onclick="selectFinish(this)">
+            <span class="option-label">C — Finished From Approved Alternate Location</span>
+            <span class="option-desc">Other approved location</span>
+        </button>
+    </div>
+
+    <!-- Alternate location details (shown when Option C selected) -->
+    <div id="altLocationGroup" style="display:none;">
+        <div class="form-group">
+            <label for="altReason">Reason</label>
+            <textarea id="altReason" placeholder="Enter reason for alternate finish location"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="altLocation">Location</label>
+            <input type="text" id="altLocation" placeholder="e.g. Home, mechanic, etc.">
+        </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- Heavy Lift -->
+    <div class="form-group">
+        <label>Heavy Lifts This Shift?</label>
+        <div style="display: flex; gap: 10px;">
+            <button type="button" class="finish-option" id="hlNo" style="flex:1; text-align:center; margin-bottom:0;" onclick="setHeavyLift(false)">
+                <span class="option-label">No</span>
+            </button>
+            <button type="button" class="finish-option" id="hlYes" style="flex:1; text-align:center; margin-bottom:0;" onclick="setHeavyLift(true)">
+                <span class="option-label">Yes</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Docket photo (shown when heavy lift = yes) -->
+    <div id="docketGroup" style="display:none;">
+        <div class="photo-section" id="docketPhotoSection">
+            <label>Delivery Docket Photo</label>
+            <button type="button" class="photo-capture-btn" id="docketPhotoBtn" onclick="capturePhoto('docket')">
+                📷 Take Docket Photo
+            </button>
+            <input type="file" accept="image/*" capture="environment" class="hidden-input" id="docketInput">
+            <div class="photo-preview-container" id="docketPreview">
+                <img class="photo-preview" id="docketImg" alt="Docket photo">
+                <div class="photo-meta">
+                    <span class="photo-timestamp" id="docketTimestamp"></span>
+                    <button type="button" class="photo-retake" onclick="capturePhoto('docket')">Retake</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- Stock on truck -->
+    <div class="form-group">
+        <label for="stockNotes">Stock Remaining On Truck</label>
+        <textarea id="stockNotes" placeholder="List any stock still on the truck at end of shift. Leave blank if truck is empty."></textarea>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- Validation checklist -->
+    <div class="checklist" id="coChecklist">
+        <div class="checklist-item">
+            <span class="check-icon pending" id="checkSelfie">○</span>
+            <span>Selfie uploaded</span>
+        </div>
+        <div class="checklist-item">
+            <span class="check-icon pending" id="checkGps">○</span>
+            <span>GPS captured</span>
+        </div>
+        <div class="checklist-item">
+            <span class="check-icon pending" id="checkRego">○</span>
+            <span>Truck registration entered</span>
+        </div>
+        <div class="checklist-item">
+            <span class="check-icon pending" id="checkFinish">○</span>
+            <span>Finish Run option selected</span>
+        </div>
+    </div>
+
+    <div class="validation-error" id="coValidation">
+        Clock Out Incomplete — Please Complete All Required Steps
+    </div>
+
+    <button class="btn-primary btn-clock-out" id="btnClockOut" onclick="submitClockOut()">
+        Clock Out
+    </button>
+    <div class="status-msg" id="coStatus"></div>
+</div>
+
+<!-- ============ SCREEN: SHIFT COMPLETE ============ -->
+<div class="screen" id="screenComplete">
+    <div style="text-align:center; margin: 40px 0 24px;">
+        <div style="font-size: 48px;">✅</div>
+        <h2 style="color: #17bf63; margin-top: 12px;">Shift Complete</h2>
+    </div>
+
+    <div class="shift-card">
+        <h3>Shift Summary</h3>
+        <div class="shift-row">
+            <span class="label">Date</span>
+            <span class="value" id="summaryDate"></span>
+        </div>
+        <div class="shift-row">
+            <span class="label">Start</span>
+            <span class="value" id="summaryStart"></span>
+        </div>
+        <div class="shift-row">
+            <span class="label">Finish</span>
+            <span class="value" id="summaryFinish"></span>
+        </div>
+        <div class="shift-row">
+            <span class="label">Shift Length</span>
+            <span class="value" id="summaryShift"></span>
+        </div>
+        <div class="shift-row">
+            <span class="label">Lunch Deduction</span>
+            <span class="value" id="summaryLunch"></span>
+        </div>
+        <div class="shift-row">
+            <span class="label">Paid Hours</span>
+            <span class="value highlight" id="summaryPaid"></span>
+        </div>
+        <div class="shift-row">
+            <span class="label">Team Member</span>
+            <span class="value" id="summaryTeam"></span>
+        </div>
+        <div class="shift-row">
+            <span class="label">Heavy Lift</span>
+            <span class="value" id="summaryHeavyLift"></span>
+        </div>
+        <div class="shift-row">
+            <span class="label">Finish Location</span>
+            <span class="value" id="summaryFinishType"></span>
+        </div>
+    </div>
+
+    <button class="btn-primary" onclick="resetApp()">Done</button>
+</div>
+
+<!-- Hidden canvas for photo overlay -->
+<canvas class="hidden-input" id="photoCanvas"></canvas>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyATmpwRd9TAgu_ypD81dVodb4tYPJJwAElvlCJrEvkZGn2weA7k1mbw84lVNvZDZ9i/exec';
+
+var DEPOTS = {
+    oxley: { lat: -27.6068, lng: 152.9782, name: 'Oxley' },
+    carindale: { lat: -27.5052, lng: 153.1000, name: 'Carindale' },
+    loganholme: { lat: -27.6869, lng: 153.2027, name: 'Loganholme' },
+    macgregor: { lat: -27.5639, lng: 153.0680, name: 'Macgregor' }
+};
+
+var GPS_RADIUS_M = 2000; // 2km allowance for depot check-in
+
+// ============================================================
+// STATE
+// ============================================================
+var state = {
+    name: '',
+    depot: '',
+    clockInTime: null,
+    clockInCoords: null,
+    clockInPhoto: null,
+    clockOutTime: null,
+    clockOutCoords: null,
+    clockOutPhoto: null,
+    finishOption: '',
+    altReason: '',
+    altLocation: '',
+    teamMember: '',
+    heavyLift: false,
+    stockNotes: ''
+};
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+    document.getElementById(id).classList.add('active');
+}
+
+// ============================================================
+// CLOCK
+// ============================================================
+var clockInterval;
+function startClock() {
+    function update() {
+        var now = new Date();
+        var h = now.getHours() % 12 || 12;
+        var m = String(now.getMinutes()).padStart(2, '0');
+        var ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+        var timeStr = h + ':' + m + ' ' + ampm;
+        var dateStr = now.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+        var ciTime = document.getElementById('clockInTime');
+        var ciDate = document.getElementById('clockInDate');
+        var coTime = document.getElementById('clockOutTime');
+        var coDate = document.getElementById('clockOutDate');
+        if (ciTime) ciTime.textContent = timeStr;
+        if (ciDate) ciDate.textContent = dateStr;
+        if (coTime) coTime.textContent = timeStr;
+        if (coDate) coDate.textContent = dateStr;
+
+        // Update shift duration if clocked in
+        if (state.clockInTime) {
+            var diff = now - state.clockInTime;
+            var hrs = Math.floor(diff / 3600000);
+            var mins = Math.floor((diff % 3600000) / 60000);
+            var durEl = document.getElementById('shiftDuration');
+            if (durEl) durEl.textContent = hrs + 'h ' + mins + 'm';
+        }
+    }
+    update();
+    clockInterval = setInterval(update, 10000);
+}
+
+// ============================================================
+// GPS
+// ============================================================
+function getGPS() {
+    return new Promise(function(resolve) {
+        if (!navigator.geolocation) { resolve(null); return; }
+        navigator.geolocation.getCurrentPosition(
+            function(pos) { resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }); },
+            function() { resolve(null); },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    });
+}
+
+function distanceM(lat1, lng1, lat2, lng2) {
+    var R = 6371000;
+    var dLat = (lat2 - lat1) * Math.PI / 180;
+    var dLng = (lng2 - lng1) * Math.PI / 180;
+    var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng/2) * Math.sin(dLng/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function updateGpsIndicator(prefix, coords) {
+    var dot = document.getElementById(prefix + 'GpsDot');
+    var text = document.getElementById(prefix + 'GpsText');
+    if (coords) {
+        dot.className = 'gps-dot acquired';
+        text.textContent = 'GPS: ' + coords.lat.toFixed(5) + ', ' + coords.lng.toFixed(5);
+    } else {
+        dot.className = 'gps-dot failed';
+        text.textContent = 'GPS unavailable — try again';
+    }
+}
+
+// ============================================================
+// PHOTO
+// ============================================================
+var photoData = { ci: null, co: null, docket: null };
+
+function capturePhoto(type) {
+    document.getElementById(type + 'Input').click();
+}
+
+function setupPhotoInput(type) {
+    var input = document.getElementById(type + 'Input');
+    input.addEventListener('change', function() {
+        if (!this.files || !this.files[0]) return;
+        var file = this.files[0];
+        var reader = new FileReader();
+        var captureTime = new Date();
+
+        reader.onload = function(e) {
+            var rawSrc = e.target.result;
+
+            // Docket photos don't need GPS overlay
+            if (type === 'docket') {
+                resizeImage(rawSrc, function(dataUrl) {
+                    photoData.docket = dataUrl.split(',')[1];
+                    document.getElementById('docketImg').src = dataUrl;
+                    document.getElementById('docketPreview').classList.add('visible');
+                    document.getElementById('docketTimestamp').textContent = '✓ ' + formatTime(captureTime);
+                    document.getElementById('docketPhotoSection').classList.add('captured');
+                    document.getElementById('docketPhotoBtn').style.display = 'none';
+                });
+                return;
+            }
+
+            getGPS().then(function(coords) {
+                var prefix = type === 'ci' ? 'ci' : 'co';
+                if (coords) {
+                    if (type === 'ci') state.clockInCoords = coords;
+                    else state.clockOutCoords = coords;
+                }
+                updateGpsIndicator(prefix, coords);
+
+                overlayTimestamp(rawSrc, type === 'ci' ? 'CHECK IN' : 'CHECK OUT', captureTime, coords).then(function(dataUrl) {
+                    photoData[type] = dataUrl.split(',')[1];
+
+                    document.getElementById(type + 'Img').src = dataUrl;
+                    document.getElementById(type + 'Preview').classList.add('visible');
+                    document.getElementById(type + 'Timestamp').textContent = '✓ ' + formatTime(captureTime);
+                    document.getElementById(type + 'PhotoSection').classList.add('captured');
+                    document.getElementById(type + 'PhotoBtn').style.display = 'none';
+
+                    validateClockIn();
+                    updateClockOutChecklist();
+                });
+            });
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+// Resize image without overlay (for docket photos)
+function resizeImage(imageSrc, callback) {
+    var img = new Image();
+    img.onload = function() {
+        var canvas = document.getElementById('photoCanvas');
+        var maxW = 1200;
+        var w = img.width, h = img.height;
+        if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        callback(canvas.toDataURL('image/jpeg', 0.7));
+    };
+    img.src = imageSrc;
+}
+
+// Heavy lift toggle
+function setHeavyLift(yes) {
+    state.heavyLift = yes;
+    document.getElementById('hlYes').classList.toggle('selected', yes);
+    document.getElementById('hlNo').classList.toggle('selected', !yes);
+    document.getElementById('docketGroup').style.display = yes ? 'block' : 'none';
+}
+
+function formatTime(date) {
+    var h = date.getHours() % 12 || 12;
+    var m = String(date.getMinutes()).padStart(2, '0');
+    var ampm = date.getHours() >= 12 ? 'PM' : 'AM';
+    return h + ':' + m + ' ' + ampm;
+}
+
+function formatTimeFull(date) {
+    var d = String(date.getDate()).padStart(2, '0');
+    var mo = String(date.getMonth() + 1).padStart(2, '0');
+    var y = date.getFullYear();
+    return d + '/' + mo + '/' + y + ' ' + formatTime(date);
+}
+
+function overlayTimestamp(imageSrc, badge, timestamp, coords) {
+    return new Promise(function(resolve) {
+        var img = new Image();
+        img.onload = function() {
+            var canvas = document.getElementById('photoCanvas');
+            var maxW = 1200;
+            var w = img.width, h = img.height;
+            if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+            canvas.width = w; canvas.height = h;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+
+            var barH = Math.max(70, h * 0.1);
+            ctx.fillStyle = 'rgba(0,0,0,0.65)';
+            ctx.fillRect(0, h - barH, w, barH);
+
+            var fontSize = Math.max(16, Math.round(w * 0.028));
+            ctx.font = 'bold ' + fontSize + 'px -apple-system, sans-serif';
+            var badgeColor = badge === 'CHECK IN' ? '#17bf63' : '#e0245e';
+            var badgeW = ctx.measureText(badge).width + 16;
+            var badgeH = fontSize + 10;
+            ctx.fillStyle = badgeColor;
+            roundRect(ctx, 12, h - barH + 10, badgeW, badgeH, 6);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.fillText(badge, 20, h - barH + fontSize + 11);
+
+            var smallFont = Math.max(13, Math.round(w * 0.022));
+            ctx.font = '600 ' + smallFont + 'px -apple-system, sans-serif';
+            ctx.fillStyle = '#fff';
+            ctx.fillText(formatTimeFull(timestamp), 14, h - barH + badgeH + smallFont + 14);
+
+            var gpsStr = coords ? coords.lat.toFixed(5) + ', ' + coords.lng.toFixed(5) : 'GPS unavailable';
+            ctx.fillText(gpsStr, 14, h - barH + badgeH + smallFont * 2 + 20);
+
+            resolve(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.src = imageSrc;
+    });
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r, y); ctx.lineTo(x+w-r, y);
+    ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+    ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+    ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+    ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y);
+    ctx.closePath();
+}
+
+// ============================================================
+// SCREEN: NAME
+// ============================================================
+function continueToAction() {
+    var name = document.getElementById('driverName').value;
+    var depot = document.getElementById('depot').value;
+    var msg = document.getElementById('nameStatus');
+
+    if (!name) { msg.textContent = 'Select your name'; msg.className = 'status-msg error'; return; }
+    if (!depot) { msg.textContent = 'Select your depot'; msg.className = 'status-msg error'; return; }
+
+    state.name = name;
+    state.depot = depot;
+    localStorage.setItem('bms_driver_name', name);
+    localStorage.setItem('bms_depot', depot);
+
+    // Check if already clocked in
+    var saved = localStorage.getItem('bms_shift_' + name);
+    if (saved) {
+        var shift = JSON.parse(saved);
+        state.clockInTime = new Date(shift.clockInTime);
+        state.clockInCoords = shift.clockInCoords;
+        state.clockInPhoto = shift.clockInPhoto;
+        state.teamMember = shift.teamMember || '';
+
+        document.getElementById('shiftName').textContent = name;
+        document.getElementById('shiftTeam').textContent = state.teamMember || 'Solo';
+        document.getElementById('shiftDepot').textContent = DEPOTS[depot].name;
+        document.getElementById('shiftStart').textContent = formatTime(state.clockInTime);
+        showScreen('screenClockedIn');
+    } else {
+        showScreen('screenClockIn');
+        acquireClockInGPS();
+    }
+    startClock();
+}
+
+// ============================================================
+// SCREEN: CLOCK IN
+// ============================================================
+function acquireClockInGPS() {
+    var dot = document.getElementById('ciGpsDot');
+    var text = document.getElementById('ciGpsText');
+    dot.className = 'gps-dot waiting';
+    text.textContent = 'Acquiring GPS...';
+
+    getGPS().then(function(coords) {
+        state.clockInCoords = coords;
+        updateGpsIndicator('ci', coords);
+        validateClockIn();
+    });
+}
+
+function validateClockIn() {
+    var btn = document.getElementById('btnClockIn');
+    btn.disabled = !(photoData.ci && state.clockInCoords);
+}
+
+function submitClockIn() {
+    var btn = document.getElementById('btnClockIn');
+    var msg = document.getElementById('ciStatus');
+    btn.disabled = true;
+    msg.textContent = 'Clocking in...';
+    msg.className = 'status-msg sending';
+
+    state.clockInTime = new Date();
+    state.clockInPhoto = photoData.ci;
+    state.teamMember = document.getElementById('teamMember').value;
+
+    // Check GPS vs depot
+    var depot = DEPOTS[state.depot];
+    var dist = distanceM(state.clockInCoords.lat, state.clockInCoords.lng, depot.lat, depot.lng);
+    var gpsFlag = dist > GPS_RADIUS_M ? 'FLAGGED' : 'OK';
+
+    var payload = {
+        action: 'clockIn',
+        name: state.name,
+        teamMember: state.teamMember,
+        depot: state.depot,
+        date: state.clockInTime.toISOString(),
+        timestamp: formatTimeFull(state.clockInTime),
+        coords: state.clockInCoords,
+        distFromDepot: Math.round(dist),
+        gpsFlag: gpsFlag,
+        photo: state.clockInPhoto
+    };
+
+    // Save to localStorage so clock-out knows
+    localStorage.setItem('bms_shift_' + state.name, JSON.stringify({
+        clockInTime: state.clockInTime.toISOString(),
+        clockInCoords: state.clockInCoords,
+        clockInPhoto: state.clockInPhoto,
+        teamMember: state.teamMember
+    }));
+
+    sendToBackend(payload, function(ok) {
+        if (ok) {
+            document.getElementById('shiftName').textContent = state.name;
+            document.getElementById('shiftTeam').textContent = state.teamMember || 'Solo';
+            document.getElementById('shiftDepot').textContent = DEPOTS[state.depot].name;
+            document.getElementById('shiftStart').textContent = formatTime(state.clockInTime);
+            showScreen('screenClockedIn');
+        } else {
+            msg.textContent = 'Error — check connection and try again';
+            msg.className = 'status-msg error';
+            btn.disabled = false;
+        }
+    });
+}
+
+// ============================================================
+// SCREEN: CLOCK OUT
+// ============================================================
+function startClockOut() {
+    showScreen('screenClockOut');
+    acquireClockOutGPS();
+}
+
+function acquireClockOutGPS() {
+    var dot = document.getElementById('coGpsDot');
+    var text = document.getElementById('coGpsText');
+    dot.className = 'gps-dot waiting';
+    text.textContent = 'Acquiring GPS...';
+
+    getGPS().then(function(coords) {
+        state.clockOutCoords = coords;
+        updateGpsIndicator('co', coords);
+        updateClockOutChecklist();
+    });
+}
+
+function selectFinish(btn) {
+    document.querySelectorAll('.finish-option').forEach(function(b) { b.classList.remove('selected'); });
+    btn.classList.add('selected');
+    state.finishOption = btn.getAttribute('data-value');
+
+    var altGroup = document.getElementById('altLocationGroup');
+    altGroup.style.display = state.finishOption === 'alternate_location' ? 'block' : 'none';
+
+    updateClockOutChecklist();
+}
+
+function updateClockOutChecklist() {
+    var selfieOk = !!photoData.co;
+    var gpsOk = !!state.clockOutCoords;
+    var regoOk = (document.getElementById('truckRego').value.trim().length >= 4);
+    var finishOk = !!state.finishOption;
+
+    document.getElementById('checkSelfie').textContent = selfieOk ? '✓' : '○';
+    document.getElementById('checkSelfie').className = 'check-icon ' + (selfieOk ? 'done' : 'pending');
+    document.getElementById('checkGps').textContent = gpsOk ? '✓' : '○';
+    document.getElementById('checkGps').className = 'check-icon ' + (gpsOk ? 'done' : 'pending');
+    document.getElementById('checkRego').textContent = regoOk ? '✓' : '○';
+    document.getElementById('checkRego').className = 'check-icon ' + (regoOk ? 'done' : 'pending');
+    document.getElementById('checkFinish').textContent = finishOk ? '✓' : '○';
+    document.getElementById('checkFinish').className = 'check-icon ' + (finishOk ? 'done' : 'pending');
+}
+
+function submitClockOut() {
+    var selfieOk = !!photoData.co;
+    var gpsOk = !!state.clockOutCoords;
+    var regoVal = document.getElementById('truckRego').value.trim().toUpperCase();
+    var regoOk = regoVal.length >= 4;
+    var finishOk = !!state.finishOption;
+    var validationEl = document.getElementById('coValidation');
+
+    if (!selfieOk || !gpsOk || !regoOk || !finishOk) {
+        validationEl.textContent = 'Clock Out Incomplete \u2014 Please Complete All Required Steps';
+        validationEl.classList.add('visible');
+        return;
+    }
+
+    // If alternate location, require reason + location
+    if (state.finishOption === 'alternate_location') {
+        var reason = document.getElementById('altReason').value.trim();
+        var location = document.getElementById('altLocation').value.trim();
+        if (!reason || !location) {
+            validationEl.textContent = 'Please enter reason and location for alternate finish';
+            validationEl.classList.add('visible');
+            return;
+        }
+        state.altReason = reason;
+        state.altLocation = location;
+    }
+
+    validationEl.classList.remove('visible');
+
+    var btn = document.getElementById('btnClockOut');
+    var msg = document.getElementById('coStatus');
+    btn.disabled = true;
+    msg.textContent = 'Clocking out...';
+    msg.className = 'status-msg sending';
+
+    state.clockOutTime = new Date();
+    state.clockOutPhoto = photoData.co;
+
+    // Calculate hours
+    var diffMs = state.clockOutTime - state.clockInTime;
+    var totalHrs = diffMs / 3600000;
+    var lunchDeduction = totalHrs > 5 ? 0.5 : 0;
+    var paidHrs = totalHrs - lunchDeduction;
+
+    // Distance from start to finish
+    var travelDist = 0;
+    if (state.clockInCoords && state.clockOutCoords) {
+        travelDist = Math.round(distanceM(state.clockInCoords.lat, state.clockInCoords.lng, state.clockOutCoords.lat, state.clockOutCoords.lng));
+    }
+
+    // Finish type label
+    var finishLabels = {
+        returned_to_depot: 'Returned To Depot',
+        final_delivery: 'Finished From Final Delivery Location',
+        alternate_location: 'Approved Alternate Location'
+    };
+
+    var payload = {
+        action: 'clockOut',
+        name: state.name,
+        depot: state.depot,
+        clockInTime: state.clockInTime.toISOString(),
+        clockInTimestamp: formatTimeFull(state.clockInTime),
+        clockInCoords: state.clockInCoords,
+        clockOutTime: state.clockOutTime.toISOString(),
+        clockOutTimestamp: formatTimeFull(state.clockOutTime),
+        clockOutCoords: state.clockOutCoords,
+        totalHours: Math.round(totalHrs * 100) / 100,
+        lunchDeduction: lunchDeduction,
+        paidHours: Math.round(paidHrs * 100) / 100,
+        finishOption: state.finishOption,
+        finishLabel: finishLabels[state.finishOption],
+        altReason: state.altReason,
+        altLocation: state.altLocation,
+        travelDistanceM: travelDist,
+        photo: state.clockOutPhoto,
+        teamMember: state.teamMember,
+        truckRego: regoVal,
+        heavyLift: state.heavyLift,
+        docketPhoto: photoData.docket || null,
+        stockNotes: document.getElementById('stockNotes').value.trim()
+    };
+
+    sendToBackend(payload, function(ok) {
+        if (ok) {
+            // Clear shift from localStorage
+            localStorage.removeItem('bms_shift_' + state.name);
+
+            // Show summary
+            var dateStr = state.clockInTime.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' });
+            document.getElementById('summaryDate').textContent = dateStr;
+            document.getElementById('summaryStart').textContent = formatTime(state.clockInTime);
+            document.getElementById('summaryFinish').textContent = formatTime(state.clockOutTime);
+            document.getElementById('summaryShift').textContent = totalHrs.toFixed(1) + ' hrs';
+            document.getElementById('summaryLunch').textContent = lunchDeduction > 0 ? '-0.5 hrs' : 'None';
+            document.getElementById('summaryPaid').textContent = paidHrs.toFixed(1) + ' hrs';
+            document.getElementById('summaryTeam').textContent = state.teamMember || 'Solo';
+            document.getElementById('summaryHeavyLift').textContent = state.heavyLift ? 'Yes' : 'No';
+            document.getElementById('summaryFinishType').textContent = finishLabels[state.finishOption];
+
+            showScreen('screenComplete');
+        } else {
+            msg.textContent = 'Error — check connection and try again';
+            msg.className = 'status-msg error';
+            btn.disabled = false;
+        }
+    });
+}
+
+// ============================================================
+// BACKEND
+// ============================================================
+function sendToBackend(payload, callback) {
+    fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(function() { callback(true); })
+    .catch(function() { callback(false); });
+}
+
+// ============================================================
+// RESET
+// ============================================================
+function resetApp() {
+    state = { name: '', depot: '', clockInTime: null, clockInCoords: null, clockInPhoto: null,
+              clockOutTime: null, clockOutCoords: null, clockOutPhoto: null,
+              finishOption: '', altReason: '', altLocation: '',
+              teamMember: '', heavyLift: false, stockNotes: '' };
+    photoData = { ci: null, co: null, docket: null };
+
+    // Reset photo UI
+    ['ci', 'co', 'docket'].forEach(function(type) {
+        var preview = document.getElementById(type + 'Preview');
+        var section = document.getElementById(type + 'PhotoSection');
+        var btn = document.getElementById(type + 'PhotoBtn');
+        var input = document.getElementById(type + 'Input');
+        if (preview) preview.classList.remove('visible');
+        if (section) section.classList.remove('captured');
+        if (btn) btn.style.display = 'flex';
+        if (input) input.value = '';
+    });
+
+    // Reset finish options
+    document.querySelectorAll('.finish-option').forEach(function(b) { b.classList.remove('selected'); });
+    document.getElementById('altLocationGroup').style.display = 'none';
+    document.getElementById('altReason').value = '';
+    document.getElementById('altLocation').value = '';
+    document.getElementById('coValidation').classList.remove('visible');
+
+    // Reset heavy lift + stock
+    document.getElementById('docketGroup').style.display = 'none';
+    document.getElementById('hlYes').classList.remove('selected');
+    document.getElementById('hlNo').classList.remove('selected');
+    document.getElementById('stockNotes').value = '';
+    document.getElementById('teamMember').value = '';
+    document.getElementById('truckRego').value = '';
+
+    showScreen('screenName');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+setupPhotoInput('ci');
+setupPhotoInput('co');
+setupPhotoInput('docket');
+
+// Restore saved name/depot
+var savedName = localStorage.getItem('bms_driver_name');
+var savedDepot = localStorage.getItem('bms_depot');
+if (savedName) document.getElementById('driverName').value = savedName;
+if (savedDepot) document.getElementById('depot').value = savedDepot;
+
+startClock();
+</script>
+</body>
+</html>
