@@ -210,20 +210,16 @@
             <option>Carlos</option>
             <option>Chris</option>
             <option>Dale</option>
-            <option>Felix</option>
-            <option>Francis</option>
+            <option>Felix P</option>
             <option>Jack C</option>
             <option>Jack G</option>
-            <option>James</option>
-            <option>Jamie</option>
-            <option>John</option>
+            <option>Jamie S</option>
+            <option>John S</option>
             <option>Jonny</option>
-            <option>Liam</option>
             <option>Lucas</option>
-            <option>Matt</option>
-            <option>Matt M</option>
-            <option>Rory</option>
-            <option>Tom</option>
+            <option>Matt G</option>
+            <option>Nate</option>
+            <option>Nathan P</option>
             <option>Victor</option>
         </select>
     </div>
@@ -274,20 +270,16 @@
             <option>Carlos</option>
             <option>Chris</option>
             <option>Dale</option>
-            <option>Felix</option>
-            <option>Francis</option>
+            <option>Felix P</option>
             <option>Jack C</option>
             <option>Jack G</option>
-            <option>James</option>
-            <option>Jamie</option>
-            <option>John</option>
+            <option>Jamie S</option>
+            <option>John S</option>
             <option>Jonny</option>
-            <option>Liam</option>
             <option>Lucas</option>
-            <option>Matt</option>
-            <option>Matt M</option>
-            <option>Rory</option>
-            <option>Tom</option>
+            <option>Matt G</option>
+            <option>Nate</option>
+            <option>Nathan P</option>
             <option>Victor</option>
             <option value="solo">Solo run</option>
         </select>
@@ -338,13 +330,13 @@
     <div class="live-date" id="clockOutDate"></div>
 
     <div class="photo-section" id="coPhotoSection">
-        <label>Clock-Out Selfie</label>
+        <label>Check Out Photo</label>
         <button type="button" class="photo-capture-btn" id="coPhotoBtn" onclick="capturePhoto('co')">
-            📷 Take Clock-Out Selfie
+            📷 Take Check Out Photo
         </button>
-        <input type="file" accept="image/*" capture="user" class="hidden-input" id="coInput">
+        <input type="file" accept="image/*" capture="environment" class="hidden-input" id="coInput">
         <div class="photo-preview-container" id="coPreview">
-            <img class="photo-preview" id="coImg" alt="Clock-out selfie">
+            <img class="photo-preview" id="coImg" alt="Check out photo">
             <div class="photo-meta">
                 <span class="photo-timestamp" id="coTimestamp"></span>
                 <button type="button" class="photo-retake" onclick="capturePhoto('co')">Retake</button>
@@ -438,7 +430,7 @@
     <div class="checklist" id="coChecklist">
         <div class="checklist-item">
             <span class="check-icon pending" id="checkSelfie">○</span>
-            <span>Selfie uploaded</span>
+            <span>Photo uploaded</span>
         </div>
         <div class="checklist-item">
             <span class="check-icon pending" id="checkGps">○</span>
@@ -978,7 +970,9 @@ function submitClockOut() {
     // Calculate hours
     var diffMs = state.clockOutTime - state.clockInTime;
     var totalHrs = diffMs / 3600000;
-    var lunchDeduction = totalHrs > 5 ? 0.5 : 0;
+    // 30-min break deduction disabled until 1 July 2026
+    var breakActive = new Date() >= new Date('2026-07-01T00:00:00+10:00');
+    var lunchDeduction = (breakActive && totalHrs > 5) ? 0.5 : 0;
     var paidHrs = totalHrs - lunchDeduction;
 
     // Distance from start to finish
