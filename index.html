@@ -459,6 +459,10 @@
     <button class="btn-primary btn-clock-out" id="btnClockOut" onclick="submitClockOut()">
         Clock Out
     </button>
+    <div style="height:12px;"></div>
+    <button class="btn-primary" onclick="showScreen('screenClockedIn')" style="background:#253341; color:#8899a6;">
+        Back
+    </button>
     <div class="status-msg" id="coStatus"></div>
 </div>
 
@@ -523,16 +527,16 @@
         <h2 style="color: #ffad1f; margin-top: 8px;">Damage Report</h2>
     </div>
 
-    <div class="photo-section" id="dmgPhotoSectionInvoice">
+    <div class="photo-section" id="dmgPhotoSectioninvoice">
         <label>Delivery Invoice Photo</label>
-        <button type="button" class="photo-capture-btn" id="dmgPhotoBtnInvoice" onclick="captureDmgPhoto('invoice')">
+        <button type="button" class="photo-capture-btn" id="dmgPhotoBtninvoice" onclick="captureDmgPhoto('invoice')">
             📷 Take Photo of Invoice
         </button>
-        <input type="file" accept="image/*" capture="environment" class="hidden-input" id="dmgInputInvoice">
-        <div class="photo-preview-container" id="dmgPreviewInvoice">
-            <img class="photo-preview" id="dmgImgInvoice" alt="Invoice photo">
+        <input type="file" accept="image/*" capture="environment" class="hidden-input" id="dmgInputinvoice">
+        <div class="photo-preview-container" id="dmgPreviewinvoice">
+            <img class="photo-preview" id="dmgImginvoice" alt="Invoice photo">
             <div class="photo-meta">
-                <span class="photo-timestamp" id="dmgTimestampInvoice"></span>
+                <span class="photo-timestamp" id="dmgTimestampinvoice"></span>
                 <button type="button" class="photo-retake" onclick="captureDmgPhoto('invoice')">Retake</button>
             </div>
         </div>
@@ -1273,11 +1277,11 @@ function setupDmgPhotoInput(n) {
             if (n === 'invoice') {
                 resizeImage(rawSrc, function(dataUrl) {
                     dmgPhotos.invoice = dataUrl.split(',')[1];
-                    document.getElementById('dmgImgInvoice').src = dataUrl;
-                    document.getElementById('dmgPreviewInvoice').classList.add('visible');
-                    document.getElementById('dmgTimestampInvoice').textContent = '✓ ' + formatTime(captureTime);
-                    document.getElementById('dmgPhotoSectionInvoice').classList.add('captured');
-                    document.getElementById('dmgPhotoBtnInvoice').style.display = 'none';
+                    document.getElementById('dmgImginvoice').src = dataUrl;
+                    document.getElementById('dmgPreviewinvoice').classList.add('visible');
+                    document.getElementById('dmgTimestampinvoice').textContent = '✓ ' + formatTime(captureTime);
+                    document.getElementById('dmgPhotoSectioninvoice').classList.add('captured');
+                    document.getElementById('dmgPhotoBtninvoice').style.display = 'none';
                 });
                 return;
             }
