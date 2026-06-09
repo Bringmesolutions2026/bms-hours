@@ -523,19 +523,19 @@
         <h2 style="color: #ffad1f; margin-top: 8px;">Damage Report</h2>
     </div>
 
-    <div class="form-group">
-        <label for="dmgCustomer">Customer Name</label>
-        <input type="text" id="dmgCustomer" placeholder="Enter customer name">
-    </div>
-
-    <div class="form-group">
-        <label for="dmgAddress">Customer Address</label>
-        <input type="text" id="dmgAddress" placeholder="Enter delivery address">
-    </div>
-
-    <div class="form-group">
-        <label for="dmgItem">Item Damaged</label>
-        <input type="text" id="dmgItem" placeholder="e.g. Samsung 650L Fridge">
+    <div class="photo-section" id="dmgPhotoSectionInvoice">
+        <label>Delivery Invoice Photo</label>
+        <button type="button" class="photo-capture-btn" id="dmgPhotoBtnInvoice" onclick="captureDmgPhoto('invoice')">
+            📷 Take Photo of Invoice
+        </button>
+        <input type="file" accept="image/*" capture="environment" class="hidden-input" id="dmgInputInvoice">
+        <div class="photo-preview-container" id="dmgPreviewInvoice">
+            <img class="photo-preview" id="dmgImgInvoice" alt="Invoice photo">
+            <div class="photo-meta">
+                <span class="photo-timestamp" id="dmgTimestampInvoice"></span>
+                <button type="button" class="photo-retake" onclick="captureDmgPhoto('invoice')">Retake</button>
+            </div>
+        </div>
     </div>
 
     <div class="form-group">
@@ -612,16 +612,16 @@
     <div class="shift-card">
         <h3>Report Summary</h3>
         <div class="shift-row">
-            <span class="label">Customer</span>
-            <span class="value" id="dmgSummaryCustomer"></span>
-        </div>
-        <div class="shift-row">
-            <span class="label">Item</span>
-            <span class="value" id="dmgSummaryItem"></span>
-        </div>
-        <div class="shift-row">
             <span class="label">Reported By</span>
             <span class="value" id="dmgSummaryDriver"></span>
+        </div>
+        <div class="shift-row">
+            <span class="label">Damage Cause</span>
+            <span class="value" id="dmgSummaryCause"></span>
+        </div>
+        <div class="shift-row">
+            <span class="label">Invoice Photo</span>
+            <span class="value highlight">Attached</span>
         </div>
     </div>
 
@@ -1249,7 +1249,7 @@ function resetApp() {
 // ============================================================
 // DAMAGE REPORT
 // ============================================================
-var dmgPhotos = { 1: null, 2: null };
+var dmgPhotos = { invoice: null, 1: null, 2: null };
 var dmgCoords = null;
 
 function captureDmgPhoto(n) {
@@ -1266,6 +1266,21 @@ function setupDmgPhotoInput(n) {
 
         reader.onload = function(e) {
             var rawSrc = e.target.result;
+
+            // Invoice photo — no GPS overlay needed
+            if (n === 'invoice') {
+                resizeImage(rawSrc, function(dataUrl) {
+                    dmgPhotos.invoice = dataUrl.split(',')[1];
+                    document.getElementById('dmgImgInvoice').src = dataUrl;
+                    document.getElementById('dmgPreviewInvoice').classList.add('visible');
+                    document.getElementById('dmgTimestampInvoice').textContent = '✓ ' + formatTime(captureTime);
+                    document.getElementById('dmgPhotoSectionInvoice').classList.add('captured');
+                    document.getElementById('dmgPhotoBtnInvoice').style.display = 'none';
+                });
+                return;
+            }
+
+            // Damage photos — GPS overlay
             getGPS().then(function(coords) {
                 if (coords) dmgCoords = coords;
                 updateGpsIndicator('dmg', dmgCoords);
@@ -1285,18 +1300,15 @@ function setupDmgPhotoInput(n) {
 }
 
 function startDamageReport() {
-    dmgPhotos = { 1: null, 2: null };
+    dmgPhotos = { invoice: null, 1: null, 2: null };
     dmgCoords = null;
-    document.getElementById('dmgCustomer').value = '';
-    document.getElementById('dmgAddress').value = '';
-    document.getElementById('dmgItem').value = '';
     document.getElementById('dmgDescription').value = '';
     document.getElementById('dmgWho').value = '';
     document.getElementById('dmgValidation').classList.remove('visible');
     document.getElementById('dmgStatus').textContent = '';
     document.getElementById('btnSubmitDamage').disabled = false;
 
-    [1, 2].forEach(function(n) {
+    ['invoice', 1, 2].forEach(function(n) {
         document.getElementById('dmgPreview' + n).classList.remove('visible');
         document.getElementById('dmgPhotoSection' + n).classList.remove('captured');
         document.getElementById('dmgPhotoBtn' + n).style.display = 'flex';
@@ -1325,15 +1337,17 @@ function returnFromDamageReport() {
 }
 
 function submitDamageReport() {
-    var customer = document.getElementById('dmgCustomer').value.trim();
-    var address = document.getElementById('dmgAddress').value.trim();
-    var item = document.getElementById('dmgItem').value.trim();
     var description = document.getElementById('dmgDescription').value.trim();
     var who = document.getElementById('dmgWho').value;
     var validationEl = document.getElementById('dmgValidation');
 
-    if (!customer || !address || !item || !description || !who) {
-        validationEl.textContent = 'Please fill in all fields';
+    if (!dmgPhotos.invoice) {
+        validationEl.textContent = 'Please take a photo of the delivery invoice';
+        validationEl.classList.add('visible');
+        return;
+    }
+    if (!description || !who) {
+        validationEl.textContent = 'Please fill in description and damage cause';
         validationEl.classList.add('visible');
         return;
     }
@@ -1362,13 +1376,11 @@ function submitDamageReport() {
         action: 'damageReport',
         driverName: state.name,
         teamMember: state.teamMember || '',
-        customerName: customer,
-        customerAddress: address,
-        itemDamaged: item,
         description: description,
         damageCause: who,
         damageCauseLabel: whoLabels[who] || who,
         coords: dmgCoords,
+        invoicePhoto: dmgPhotos.invoice,
         photo1: dmgPhotos[1],
         photo2: dmgPhotos[2] || null,
         timestamp: new Date().toISOString()
@@ -1376,9 +1388,8 @@ function submitDamageReport() {
 
     sendToBackend(payload, function(ok) {
         if (ok) {
-            document.getElementById('dmgSummaryCustomer').textContent = customer;
-            document.getElementById('dmgSummaryItem').textContent = item;
             document.getElementById('dmgSummaryDriver').textContent = state.name;
+            document.getElementById('dmgSummaryCause').textContent = whoLabels[who] || who;
             showScreen('screenDamageComplete');
         } else {
             msg.textContent = 'Error — check connection and try again';
@@ -1394,6 +1405,7 @@ function submitDamageReport() {
 setupPhotoInput('ci');
 setupPhotoInput('co');
 setupPhotoInput('docket');
+setupDmgPhotoInput('invoice');
 setupDmgPhotoInput(1);
 setupDmgPhotoInput(2);
 
