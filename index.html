@@ -320,9 +320,14 @@
         </div>
     </div>
 
-    <button class="btn-primary btn-clock-out" onclick="startClockOut()">
-        Clock Out
-    </button>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn-primary btn-clock-out" onclick="startClockOut()" style="flex:1;">
+            Clock Out
+        </button>
+        <button class="btn-primary" onclick="startDamageReport()" style="flex:1; background:#ffad1f; color:#000;">
+            Report Damage
+        </button>
+    </div>
 </div>
 
 <!-- ============ SCREEN: CLOCK OUT ============ -->
@@ -509,6 +514,118 @@
     </div>
 
     <button class="btn-primary" onclick="resetApp()">Done</button>
+</div>
+
+<!-- ============ SCREEN: DAMAGE REPORT ============ -->
+<div class="screen" id="screenDamage">
+    <div style="text-align:center; margin-bottom: 20px;">
+        <div style="font-size: 36px;">⚠️</div>
+        <h2 style="color: #ffad1f; margin-top: 8px;">Damage Report</h2>
+    </div>
+
+    <div class="form-group">
+        <label for="dmgCustomer">Customer Name</label>
+        <input type="text" id="dmgCustomer" placeholder="Enter customer name">
+    </div>
+
+    <div class="form-group">
+        <label for="dmgAddress">Customer Address</label>
+        <input type="text" id="dmgAddress" placeholder="Enter delivery address">
+    </div>
+
+    <div class="form-group">
+        <label for="dmgItem">Item Damaged</label>
+        <input type="text" id="dmgItem" placeholder="e.g. Samsung 650L Fridge">
+    </div>
+
+    <div class="form-group">
+        <label for="dmgDescription">Description of Damage</label>
+        <textarea id="dmgDescription" placeholder="Describe the damage — what happened, where on the item, how it occurred"></textarea>
+    </div>
+
+    <div class="form-group">
+        <label for="dmgWho">Who Caused the Damage?</label>
+        <select id="dmgWho">
+            <option value="">Select</option>
+            <option value="driver_team">Our Team</option>
+            <option value="pre_existing">Pre-existing / Already Damaged</option>
+            <option value="customer_property">Customer Property Damaged</option>
+            <option value="unknown">Unknown</option>
+        </select>
+    </div>
+
+    <div class="photo-section" id="dmgPhotoSection1">
+        <label>Damage Photo 1</label>
+        <button type="button" class="photo-capture-btn" id="dmgPhotoBtn1" onclick="captureDmgPhoto(1)">
+            📷 Take Photo of Damage
+        </button>
+        <input type="file" accept="image/*" capture="environment" class="hidden-input" id="dmgInput1">
+        <div class="photo-preview-container" id="dmgPreview1">
+            <img class="photo-preview" id="dmgImg1" alt="Damage photo 1">
+            <div class="photo-meta">
+                <span class="photo-timestamp" id="dmgTimestamp1"></span>
+                <button type="button" class="photo-retake" onclick="captureDmgPhoto(1)">Retake</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="photo-section" id="dmgPhotoSection2">
+        <label>Damage Photo 2 (Optional)</label>
+        <button type="button" class="photo-capture-btn" id="dmgPhotoBtn2" onclick="captureDmgPhoto(2)">
+            📷 Take Additional Photo
+        </button>
+        <input type="file" accept="image/*" capture="environment" class="hidden-input" id="dmgInput2">
+        <div class="photo-preview-container" id="dmgPreview2">
+            <img class="photo-preview" id="dmgImg2" alt="Damage photo 2">
+            <div class="photo-meta">
+                <span class="photo-timestamp" id="dmgTimestamp2"></span>
+                <button type="button" class="photo-retake" onclick="captureDmgPhoto(2)">Retake</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="gps-status" id="dmgGpsStatus">
+        <div class="gps-dot waiting" id="dmgGpsDot"></div>
+        <span id="dmgGpsText">Acquiring GPS...</span>
+    </div>
+
+    <div class="validation-error" id="dmgValidation"></div>
+
+    <button class="btn-primary" id="btnSubmitDamage" onclick="submitDamageReport()" style="background:#ffad1f; color:#000;">
+        Submit Damage Report
+    </button>
+    <div style="height:12px;"></div>
+    <button class="btn-primary" onclick="cancelDamageReport()" style="background:#253341; color:#8899a6;">
+        Cancel
+    </button>
+    <div class="status-msg" id="dmgStatus"></div>
+</div>
+
+<!-- ============ SCREEN: DAMAGE REPORT SUBMITTED ============ -->
+<div class="screen" id="screenDamageComplete">
+    <div style="text-align:center; margin: 40px 0 24px;">
+        <div style="font-size: 48px;">📋</div>
+        <h2 style="color: #ffad1f; margin-top: 12px;">Damage Report Submitted</h2>
+        <p style="color: #8899a6; margin-top: 8px;">Management has been notified</p>
+    </div>
+
+    <div class="shift-card">
+        <h3>Report Summary</h3>
+        <div class="shift-row">
+            <span class="label">Customer</span>
+            <span class="value" id="dmgSummaryCustomer"></span>
+        </div>
+        <div class="shift-row">
+            <span class="label">Item</span>
+            <span class="value" id="dmgSummaryItem"></span>
+        </div>
+        <div class="shift-row">
+            <span class="label">Reported By</span>
+            <span class="value" id="dmgSummaryDriver"></span>
+        </div>
+    </div>
+
+    <button class="btn-primary" onclick="returnFromDamageReport()">Back to Shift</button>
 </div>
 
 <!-- Hidden canvas for photo overlay -->
@@ -1130,11 +1247,155 @@ function resetApp() {
 }
 
 // ============================================================
+// DAMAGE REPORT
+// ============================================================
+var dmgPhotos = { 1: null, 2: null };
+var dmgCoords = null;
+
+function captureDmgPhoto(n) {
+    document.getElementById('dmgInput' + n).click();
+}
+
+function setupDmgPhotoInput(n) {
+    var input = document.getElementById('dmgInput' + n);
+    input.addEventListener('change', function() {
+        if (!this.files || !this.files[0]) return;
+        var file = this.files[0];
+        var reader = new FileReader();
+        var captureTime = new Date();
+
+        reader.onload = function(e) {
+            var rawSrc = e.target.result;
+            getGPS().then(function(coords) {
+                if (coords) dmgCoords = coords;
+                updateGpsIndicator('dmg', dmgCoords);
+
+                overlayTimestamp(rawSrc, 'DAMAGE', captureTime, coords).then(function(dataUrl) {
+                    dmgPhotos[n] = dataUrl.split(',')[1];
+                    document.getElementById('dmgImg' + n).src = dataUrl;
+                    document.getElementById('dmgPreview' + n).classList.add('visible');
+                    document.getElementById('dmgTimestamp' + n).textContent = '✓ ' + formatTime(captureTime);
+                    document.getElementById('dmgPhotoSection' + n).classList.add('captured');
+                    document.getElementById('dmgPhotoBtn' + n).style.display = 'none';
+                });
+            });
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function startDamageReport() {
+    dmgPhotos = { 1: null, 2: null };
+    dmgCoords = null;
+    document.getElementById('dmgCustomer').value = '';
+    document.getElementById('dmgAddress').value = '';
+    document.getElementById('dmgItem').value = '';
+    document.getElementById('dmgDescription').value = '';
+    document.getElementById('dmgWho').value = '';
+    document.getElementById('dmgValidation').classList.remove('visible');
+    document.getElementById('dmgStatus').textContent = '';
+    document.getElementById('btnSubmitDamage').disabled = false;
+
+    [1, 2].forEach(function(n) {
+        document.getElementById('dmgPreview' + n).classList.remove('visible');
+        document.getElementById('dmgPhotoSection' + n).classList.remove('captured');
+        document.getElementById('dmgPhotoBtn' + n).style.display = 'flex';
+        document.getElementById('dmgInput' + n).value = '';
+    });
+
+    showScreen('screenDamage');
+
+    // Acquire GPS
+    var dot = document.getElementById('dmgGpsDot');
+    var text = document.getElementById('dmgGpsText');
+    dot.className = 'gps-dot waiting';
+    text.textContent = 'Acquiring GPS...';
+    getGPS().then(function(coords) {
+        dmgCoords = coords;
+        updateGpsIndicator('dmg', coords);
+    });
+}
+
+function cancelDamageReport() {
+    showScreen('screenClockedIn');
+}
+
+function returnFromDamageReport() {
+    showScreen('screenClockedIn');
+}
+
+function submitDamageReport() {
+    var customer = document.getElementById('dmgCustomer').value.trim();
+    var address = document.getElementById('dmgAddress').value.trim();
+    var item = document.getElementById('dmgItem').value.trim();
+    var description = document.getElementById('dmgDescription').value.trim();
+    var who = document.getElementById('dmgWho').value;
+    var validationEl = document.getElementById('dmgValidation');
+
+    if (!customer || !address || !item || !description || !who) {
+        validationEl.textContent = 'Please fill in all fields';
+        validationEl.classList.add('visible');
+        return;
+    }
+    if (!dmgPhotos[1]) {
+        validationEl.textContent = 'Please take at least one photo of the damage';
+        validationEl.classList.add('visible');
+        return;
+    }
+
+    validationEl.classList.remove('visible');
+
+    var btn = document.getElementById('btnSubmitDamage');
+    var msg = document.getElementById('dmgStatus');
+    btn.disabled = true;
+    msg.textContent = 'Submitting report...';
+    msg.className = 'status-msg sending';
+
+    var whoLabels = {
+        driver_team: 'Our Team',
+        pre_existing: 'Pre-existing / Already Damaged',
+        customer_property: 'Customer Property Damaged',
+        unknown: 'Unknown'
+    };
+
+    var payload = {
+        action: 'damageReport',
+        driverName: state.name,
+        teamMember: state.teamMember || '',
+        customerName: customer,
+        customerAddress: address,
+        itemDamaged: item,
+        description: description,
+        damageCause: who,
+        damageCauseLabel: whoLabels[who] || who,
+        coords: dmgCoords,
+        photo1: dmgPhotos[1],
+        photo2: dmgPhotos[2] || null,
+        timestamp: new Date().toISOString()
+    };
+
+    sendToBackend(payload, function(ok) {
+        if (ok) {
+            document.getElementById('dmgSummaryCustomer').textContent = customer;
+            document.getElementById('dmgSummaryItem').textContent = item;
+            document.getElementById('dmgSummaryDriver').textContent = state.name;
+            showScreen('screenDamageComplete');
+        } else {
+            msg.textContent = 'Error — check connection and try again';
+            msg.className = 'status-msg error';
+            btn.disabled = false;
+        }
+    });
+}
+
+// ============================================================
 // INIT
 // ============================================================
 setupPhotoInput('ci');
 setupPhotoInput('co');
 setupPhotoInput('docket');
+setupDmgPhotoInput(1);
+setupDmgPhotoInput(2);
 
 // Restore saved name/depot
 var savedName = localStorage.getItem('bms_driver_name');
