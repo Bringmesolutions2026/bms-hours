@@ -1116,7 +1116,9 @@ function submitClockOut() {
         }
     }
 
-    var paidHrs = totalHrs - lunchDeduction + (travelHomeMinutes / 60);
+    var rawPaidHrs = totalHrs - lunchDeduction + (travelHomeMinutes / 60);
+    // Round to nearest 15 min (8+ min rounds up, 7 or less rounds down)
+    var paidHrs = Math.round(rawPaidHrs * 4) / 4;
 
     // Distance from start to finish
     var travelDist = 0;
