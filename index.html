@@ -231,6 +231,7 @@
             <option value="carindale">Carindale</option>
             <option value="loganholme">Loganholme</option>
             <option value="macgregor">Macgregor</option>
+            <option value="customer_address">Customer Address (e.g. Saturdays)</option>
         </select>
     </div>
     <button class="btn-primary" id="btnContinue" onclick="continueToAction()">Continue</button>
@@ -485,6 +486,10 @@
             <span class="label">Lunch Deduction</span>
             <span class="value" id="summaryLunch"></span>
         </div>
+        <div class="shift-row" id="summaryTravelRow" style="display:none;">
+            <span class="label">Travel Home Pay</span>
+            <span class="value highlight" id="summaryTravel"></span>
+        </div>
         <div class="shift-row">
             <span class="label">Paid Hours</span>
             <span class="value highlight" id="summaryPaid"></span>
@@ -519,8 +524,13 @@ var DEPOTS = {
     oxley: { lat: -27.6068, lng: 152.9782, name: 'Oxley' },
     carindale: { lat: -27.5052, lng: 153.1000, name: 'Carindale' },
     loganholme: { lat: -27.6869, lng: 153.2027, name: 'Loganholme' },
-    macgregor: { lat: -27.5639, lng: 153.0680, name: 'Macgregor' }
+    macgregor: { lat: -27.5639, lng: 153.0680, name: 'Macgregor' },
+    customer_address: { lat: null, lng: null, name: 'Customer Address' }
 };
+
+var HOME_LOCATION = { lat: -27.4698, lng: 153.0251 }; // Brisbane CBD 4000
+var TRAVEL_PAY_THRESHOLD_M = 46000; // ~1hr drive triggers travel pay
+var TRAVEL_PAY_MINUTES = 30;
 
 var GPS_RADIUS_M = 2000; // 2km allowance for depot check-in
 
@@ -840,10 +850,14 @@ function submitClockIn() {
     state.clockInPhoto = photoData.ci;
     state.teamMember = document.getElementById('teamMember').value;
 
-    // Check GPS vs depot
+    // Check GPS vs depot (skip for customer address starts)
     var depot = DEPOTS[state.depot];
-    var dist = distanceM(state.clockInCoords.lat, state.clockInCoords.lng, depot.lat, depot.lng);
-    var gpsFlag = dist > GPS_RADIUS_M ? 'FLAGGED' : 'OK';
+    var dist = 0;
+    var gpsFlag = 'OK';
+    if (depot.lat && depot.lng) {
+        dist = distanceM(state.clockInCoords.lat, state.clockInCoords.lng, depot.lat, depot.lng);
+        gpsFlag = dist > GPS_RADIUS_M ? 'FLAGGED' : 'OK';
+    }
 
     var payload = {
         action: 'clockIn',
@@ -973,7 +987,19 @@ function submitClockOut() {
     // 30-min break deduction disabled until 1 July 2026
     var breakActive = new Date() >= new Date('2026-07-01T00:00:00+10:00');
     var lunchDeduction = (breakActive && totalHrs > 5) ? 0.5 : 0;
-    var paidHrs = totalHrs - lunchDeduction;
+
+    // Travel home pay: +30 min if checkout is 1+ hour from Brisbane CBD
+    var travelHomePay = false;
+    var travelHomeMinutes = 0;
+    if (state.finishOption === 'final_delivery' && state.clockOutCoords) {
+        var distFromHome = distanceM(state.clockOutCoords.lat, state.clockOutCoords.lng, HOME_LOCATION.lat, HOME_LOCATION.lng);
+        if (distFromHome >= TRAVEL_PAY_THRESHOLD_M) {
+            travelHomePay = true;
+            travelHomeMinutes = TRAVEL_PAY_MINUTES;
+        }
+    }
+
+    var paidHrs = totalHrs - lunchDeduction + (travelHomeMinutes / 60);
 
     // Distance from start to finish
     var travelDist = 0;
@@ -1006,6 +1032,8 @@ function submitClockOut() {
         altReason: state.altReason,
         altLocation: state.altLocation,
         travelDistanceM: travelDist,
+        travelHomePay: travelHomePay,
+        travelHomeMinutes: travelHomeMinutes,
         photo: state.clockOutPhoto,
         teamMember: state.teamMember,
         truckRego: regoVal,
@@ -1030,6 +1058,13 @@ function submitClockOut() {
             document.getElementById('summaryTeam').textContent = state.teamMember || 'Solo';
             document.getElementById('summaryHeavyLift').textContent = state.heavyLift ? 'Yes' : 'No';
             document.getElementById('summaryFinishType').textContent = finishLabels[state.finishOption];
+
+            if (travelHomePay) {
+                document.getElementById('summaryTravel').textContent = '+30 min';
+                document.getElementById('summaryTravelRow').style.display = '';
+            } else {
+                document.getElementById('summaryTravelRow').style.display = 'none';
+            }
 
             showScreen('screenComplete');
         } else {
