@@ -358,16 +358,16 @@
     <hr class="section-divider">
     <label>Finish Run</label>
     <div class="finish-options">
-        <button class="finish-option" data-value="returned_to_depot" onclick="selectFinish(this)">
-            <span class="option-label">A — Returned To Depot</span>
-            <span class="option-desc">Truck returned to warehouse</span>
-        </button>
         <button class="finish-option" data-value="final_delivery" onclick="selectFinish(this)">
-            <span class="option-label">B — Finished From Final Delivery Location</span>
+            <span class="option-label">A — Finished at Final Delivery Address</span>
             <span class="option-desc">Shift ended at last drop</span>
         </button>
+        <button class="finish-option" data-value="returned_to_depot" onclick="selectFinish(this)">
+            <span class="option-label">B — Finished at Depot (Pre-load)</span>
+            <span class="option-desc">Truck returned to warehouse</span>
+        </button>
         <button class="finish-option" data-value="alternate_location" onclick="selectFinish(this)">
-            <span class="option-label">C — Finished From Approved Alternate Location</span>
+            <span class="option-label">C — Finished from Approved Alternate Location</span>
             <span class="option-desc">Other approved location</span>
         </button>
     </div>
@@ -1009,9 +1009,9 @@ function submitClockOut() {
 
     // Finish type label
     var finishLabels = {
-        returned_to_depot: 'Returned To Depot',
-        final_delivery: 'Finished From Final Delivery Location',
-        alternate_location: 'Approved Alternate Location'
+        final_delivery: 'Finished at Final Delivery Address',
+        returned_to_depot: 'Finished at Depot (Pre-load)',
+        alternate_location: 'Finished from Approved Alternate Location'
     };
 
     var payload = {
