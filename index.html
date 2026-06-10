@@ -388,38 +388,6 @@
         </div>
     </div>
 
-    <hr class="section-divider">
-
-    <!-- Heavy Lift -->
-    <div class="form-group">
-        <label>Heavy Lifts This Shift?</label>
-        <div style="display: flex; gap: 10px;">
-            <button type="button" class="finish-option" id="hlNo" style="flex:1; text-align:center; margin-bottom:0;" onclick="setHeavyLift(false)">
-                <span class="option-label">No</span>
-            </button>
-            <button type="button" class="finish-option" id="hlYes" style="flex:1; text-align:center; margin-bottom:0;" onclick="setHeavyLift(true)">
-                <span class="option-label">Yes</span>
-            </button>
-        </div>
-    </div>
-
-    <!-- Docket photo (shown when heavy lift = yes) -->
-    <div id="docketGroup" style="display:none;">
-        <div class="photo-section" id="docketPhotoSection">
-            <label>Delivery Docket Photo</label>
-            <button type="button" class="photo-capture-btn" id="docketPhotoBtn" onclick="capturePhoto('docket')">
-                📷 Take Docket Photo
-            </button>
-            <input type="file" accept="image/*" capture="environment" class="hidden-input" id="docketInput">
-            <div class="photo-preview-container" id="docketPreview">
-                <img class="photo-preview" id="docketImg" alt="Docket photo">
-                <div class="photo-meta">
-                    <span class="photo-timestamp" id="docketTimestamp"></span>
-                    <button type="button" class="photo-retake" onclick="capturePhoto('docket')">Retake</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <hr class="section-divider">
 
@@ -505,10 +473,6 @@
         <div class="shift-row">
             <span class="label">Team Member</span>
             <span class="value" id="summaryTeam"></span>
-        </div>
-        <div class="shift-row">
-            <span class="label">Heavy Lift</span>
-            <span class="value" id="summaryHeavyLift"></span>
         </div>
         <div class="shift-row">
             <span class="label">Finish Location</span>
@@ -670,7 +634,6 @@ var state = {
     altReason: '',
     altLocation: '',
     teamMember: '',
-    heavyLift: false,
     stockNotes: ''
 };
 
@@ -756,7 +719,7 @@ function updateGpsIndicator(prefix, coords) {
 // ============================================================
 // PHOTO
 // ============================================================
-var photoData = { ci: null, co: null, docket: null };
+var photoData = { ci: null, co: null };
 
 function capturePhoto(type) {
     document.getElementById(type + 'Input').click();
@@ -772,19 +735,6 @@ function setupPhotoInput(type) {
 
         reader.onload = function(e) {
             var rawSrc = e.target.result;
-
-            // Docket photos don't need GPS overlay
-            if (type === 'docket') {
-                resizeImage(rawSrc, function(dataUrl) {
-                    photoData.docket = dataUrl.split(',')[1];
-                    document.getElementById('docketImg').src = dataUrl;
-                    document.getElementById('docketPreview').classList.add('visible');
-                    document.getElementById('docketTimestamp').textContent = '✓ ' + formatTime(captureTime);
-                    document.getElementById('docketPhotoSection').classList.add('captured');
-                    document.getElementById('docketPhotoBtn').style.display = 'none';
-                });
-                return;
-            }
 
             getGPS().then(function(coords) {
                 var prefix = type === 'ci' ? 'ci' : 'co';
@@ -826,14 +776,6 @@ function resizeImage(imageSrc, callback) {
         callback(canvas.toDataURL('image/jpeg', 0.7));
     };
     img.src = imageSrc;
-}
-
-// Heavy lift toggle
-function setHeavyLift(yes) {
-    state.heavyLift = yes;
-    document.getElementById('hlYes').classList.toggle('selected', yes);
-    document.getElementById('hlNo').classList.toggle('selected', !yes);
-    document.getElementById('docketGroup').style.display = yes ? 'block' : 'none';
 }
 
 function formatTime(date) {
@@ -1159,8 +1101,6 @@ function submitClockOut() {
         photo: state.clockOutPhoto,
         teamMember: state.teamMember,
         truckRego: regoVal,
-        heavyLift: state.heavyLift,
-        docketPhoto: photoData.docket || null,
         stockNotes: document.getElementById('stockNotes').value.trim()
     };
 
@@ -1178,7 +1118,6 @@ function submitClockOut() {
             document.getElementById('summaryLunch').textContent = lunchDeduction > 0 ? '-0.5 hrs' : 'None';
             document.getElementById('summaryPaid').textContent = paidHrs.toFixed(1) + ' hrs';
             document.getElementById('summaryTeam').textContent = state.teamMember || 'Solo';
-            document.getElementById('summaryHeavyLift').textContent = state.heavyLift ? 'Yes' : 'No';
             document.getElementById('summaryFinishType').textContent = finishLabels[state.finishOption];
 
             if (travelHomePay) {
@@ -1218,11 +1157,11 @@ function resetApp() {
     state = { name: '', depot: '', clockInTime: null, clockInCoords: null, clockInPhoto: null,
               clockOutTime: null, clockOutCoords: null, clockOutPhoto: null,
               finishOption: '', altReason: '', altLocation: '',
-              teamMember: '', heavyLift: false, stockNotes: '' };
-    photoData = { ci: null, co: null, docket: null };
+              teamMember: '', stockNotes: '' };
+    photoData = { ci: null, co: null };
 
     // Reset photo UI
-    ['ci', 'co', 'docket'].forEach(function(type) {
+    ['ci', 'co'].forEach(function(type) {
         var preview = document.getElementById(type + 'Preview');
         var section = document.getElementById(type + 'PhotoSection');
         var btn = document.getElementById(type + 'PhotoBtn');
@@ -1241,9 +1180,6 @@ function resetApp() {
     document.getElementById('coValidation').classList.remove('visible');
 
     // Reset heavy lift + stock
-    document.getElementById('docketGroup').style.display = 'none';
-    document.getElementById('hlYes').classList.remove('selected');
-    document.getElementById('hlNo').classList.remove('selected');
     document.getElementById('stockNotes').value = '';
     document.getElementById('teamMember').value = '';
     document.getElementById('truckRego').value = '';
@@ -1409,7 +1345,6 @@ function submitDamageReport() {
 // ============================================================
 setupPhotoInput('ci');
 setupPhotoInput('co');
-setupPhotoInput('docket');
 setupDmgPhotoInput('invoice');
 setupDmgPhotoInput(1);
 setupDmgPhotoInput(2);
