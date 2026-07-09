@@ -371,6 +371,14 @@
         <label for="truckRego">Truck Registration</label>
         <input type="text" id="truckRego" placeholder="e.g. 123 ABC" style="text-transform: uppercase;" oninput="updateClockOutChecklist()">
     </div>
+    <div class="form-group">
+        <label for="truckTakenBy">Who is taking the truck home?</label>
+        <input type="text" id="truckTakenBy" placeholder="e.g. Ben">
+    </div>
+    <div class="form-group">
+        <label for="truckStreet">Street truck will be parked at</label>
+        <input type="text" id="truckStreet" placeholder="e.g. 14 Smith St, Oxley">
+    </div>
 
     <hr class="section-divider">
     <label>Finish Run</label>
@@ -1112,6 +1120,8 @@ function submitClockOut() {
         photo: state.clockOutPhoto,
         teamMember: state.teamMember,
         truckRego: regoVal,
+        truckTakenBy: document.getElementById('truckTakenBy').value.trim(),
+        truckStreet: document.getElementById('truckStreet').value.trim(),
         stockNotes: document.getElementById('stockNotes').value.trim()
     };
 
