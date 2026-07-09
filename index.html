@@ -142,6 +142,19 @@
         .finish-option .option-label { display: block; margin-bottom: 4px; }
         .finish-option .option-desc { font-size: 12px; color: #8899a6; font-weight: 400; }
 
+        /* Equipment checklist */
+        .equip-checklist { margin-bottom: 16px; }
+        .equip-btn {
+            display: flex; align-items: center; width: 100%; padding: 14px 16px;
+            background: #1c2938; border: 2px solid #2e3d4f;
+            border-radius: 10px; color: #fff; font-size: 15px;
+            font-weight: 500; text-align: left; cursor: pointer;
+            margin-bottom: 8px; -webkit-tap-highlight-color: transparent;
+        }
+        .equip-btn:active { background: #253341; }
+        .equip-btn.confirmed { border-color: #17bf63; background: #1a2c3d; }
+        .equip-btn .equip-icon { margin-right: 12px; font-size: 18px; }
+
         /* Shift summary card */
         .shift-card {
             background: #1c2938; border: 1px solid #2e3d4f;
@@ -370,22 +383,6 @@
             <span class="option-label">B — Finished at Depot (Pre-load)</span>
             <span class="option-desc">Truck returned to warehouse</span>
         </button>
-        <button class="finish-option" data-value="alternate_location" onclick="selectFinish(this)">
-            <span class="option-label">C — Finished from Approved Alternate Location</span>
-            <span class="option-desc">Other approved location</span>
-        </button>
-    </div>
-
-    <!-- Alternate location details (shown when Option C selected) -->
-    <div id="altLocationGroup" style="display:none;">
-        <div class="form-group">
-            <label for="altReason">Reason</label>
-            <textarea id="altReason" placeholder="Enter reason for alternate finish location"></textarea>
-        </div>
-        <div class="form-group">
-            <label for="altLocation">Location</label>
-            <input type="text" id="altLocation" placeholder="e.g. Home, mechanic, etc.">
-        </div>
     </div>
 
 
@@ -395,6 +392,20 @@
     <div class="form-group">
         <label for="stockNotes">Stock Remaining On Truck</label>
         <textarea id="stockNotes" placeholder="List any stock still on the truck at end of shift. Leave blank if truck is empty."></textarea>
+    </div>
+
+    <hr class="section-divider">
+    <label>Equipment Check</label>
+    <div class="equip-checklist">
+        <button class="equip-btn" data-item="trolley" onclick="toggleEquip(this)">
+            <span class="equip-icon">○</span> Trolley on truck
+        </button>
+        <button class="equip-btn" data-item="toolkit" onclick="toggleEquip(this)">
+            <span class="equip-icon">○</span> Toolkit on truck
+        </button>
+        <button class="equip-btn" data-item="padlock" onclick="toggleEquip(this)">
+            <span class="equip-icon">○</span> Padlock on back
+        </button>
     </div>
 
     <hr class="section-divider">
@@ -416,6 +427,10 @@
         <div class="checklist-item">
             <span class="check-icon pending" id="checkFinish">○</span>
             <span>Finish Run option selected</span>
+        </div>
+        <div class="checklist-item">
+            <span class="check-icon pending" id="checkEquip">○</span>
+            <span>Equipment confirmed</span>
         </div>
     </div>
 
@@ -982,11 +997,22 @@ function selectFinish(btn) {
     document.querySelectorAll('.finish-option').forEach(function(b) { b.classList.remove('selected'); });
     btn.classList.add('selected');
     state.finishOption = btn.getAttribute('data-value');
-
-    var altGroup = document.getElementById('altLocationGroup');
-    altGroup.style.display = state.finishOption === 'alternate_location' ? 'block' : 'none';
-
     updateClockOutChecklist();
+}
+
+function toggleEquip(btn) {
+    btn.classList.toggle('confirmed');
+    var icon = btn.querySelector('.equip-icon');
+    icon.textContent = btn.classList.contains('confirmed') ? '✓' : '○';
+    updateClockOutChecklist();
+}
+
+function allEquipConfirmed() {
+    var btns = document.querySelectorAll('.equip-btn');
+    for (var i = 0; i < btns.length; i++) {
+        if (!btns[i].classList.contains('confirmed')) return false;
+    }
+    return true;
 }
 
 function updateClockOutChecklist() {
@@ -1003,6 +1029,9 @@ function updateClockOutChecklist() {
     document.getElementById('checkRego').className = 'check-icon ' + (regoOk ? 'done' : 'pending');
     document.getElementById('checkFinish').textContent = finishOk ? '✓' : '○';
     document.getElementById('checkFinish').className = 'check-icon ' + (finishOk ? 'done' : 'pending');
+    var equipOk = allEquipConfirmed();
+    document.getElementById('checkEquip').textContent = equipOk ? '✓' : '○';
+    document.getElementById('checkEquip').className = 'check-icon ' + (equipOk ? 'done' : 'pending');
 }
 
 function submitClockOut() {
@@ -1011,25 +1040,13 @@ function submitClockOut() {
     var regoVal = document.getElementById('truckRego').value.trim().toUpperCase();
     var regoOk = regoVal.length >= 4;
     var finishOk = !!state.finishOption;
+    var equipOk = allEquipConfirmed();
     var validationEl = document.getElementById('coValidation');
 
-    if (!selfieOk || !gpsOk || !regoOk || !finishOk) {
+    if (!selfieOk || !gpsOk || !regoOk || !finishOk || !equipOk) {
         validationEl.textContent = 'Clock Out Incomplete \u2014 Please Complete All Required Steps';
         validationEl.classList.add('visible');
         return;
-    }
-
-    // If alternate location, require reason + location
-    if (state.finishOption === 'alternate_location') {
-        var reason = document.getElementById('altReason').value.trim();
-        var location = document.getElementById('altLocation').value.trim();
-        if (!reason || !location) {
-            validationEl.textContent = 'Please enter reason and location for alternate finish';
-            validationEl.classList.add('visible');
-            return;
-        }
-        state.altReason = reason;
-        state.altLocation = location;
     }
 
     validationEl.classList.remove('visible');
