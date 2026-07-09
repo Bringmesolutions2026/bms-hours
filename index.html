@@ -473,10 +473,6 @@
             <span class="label">Shift Length</span>
             <span class="value" id="summaryShift"></span>
         </div>
-        <div class="shift-row">
-            <span class="label">Lunch Deduction</span>
-            <span class="value" id="summaryLunch"></span>
-        </div>
         <div class="shift-row" id="summaryTravelRow" style="display:none;">
             <span class="label">Travel Home Pay</span>
             <span class="value highlight" id="summaryTravel"></span>
@@ -1063,9 +1059,7 @@ function submitClockOut() {
     // Calculate hours
     var diffMs = state.clockOutTime - state.clockInTime;
     var totalHrs = diffMs / 3600000;
-    // 30-min break deduction disabled until 1 July 2026
-    var breakActive = new Date() >= new Date('2026-07-01T00:00:00+10:00');
-    var lunchDeduction = (breakActive && totalHrs > 5) ? 0.5 : 0;
+    var lunchDeduction = 0;
 
     // Travel home pay: +30 min if checkout is 1+ hour from Brisbane CBD
     var travelHomePay = false;
@@ -1132,7 +1126,6 @@ function submitClockOut() {
             document.getElementById('summaryStart').textContent = formatTime(state.clockInTime);
             document.getElementById('summaryFinish').textContent = formatTime(state.clockOutTime);
             document.getElementById('summaryShift').textContent = totalHrs.toFixed(1) + ' hrs';
-            document.getElementById('summaryLunch').textContent = lunchDeduction > 0 ? '-0.5 hrs' : 'None';
             document.getElementById('summaryPaid').textContent = paidHrs.toFixed(1) + ' hrs';
             document.getElementById('summaryTeam').textContent = state.teamMember || 'Solo';
             document.getElementById('summaryFinishType').textContent = finishLabels[state.finishOption];
